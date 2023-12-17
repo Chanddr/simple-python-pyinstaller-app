@@ -1,13 +1,7 @@
 node {
-    withDockerContainer(image: 'node:16-buster-slim', args: '-p 3000:3000') { 
-        stage('Build') {
-            sh sh 'python -m py_compile sources/add2vals.py sources/calc.py'
-        }
-        stage('Test') {
-            sh 'py.test --verbose --junit-xml test-reports/results.xml sources/test_calc.py'
-        }
-        stage('Deliver') {
-            sh 'pyinstaller --onefile sources/add2vals.py'
-        }
+    stage('Build') {
+    withDockerContainer(image: 'python:2-alpine'){
+    }
+    sh 'python -m py_compile sources/add2vals.py sources/calc.py'
     }
 }
