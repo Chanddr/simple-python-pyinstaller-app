@@ -13,10 +13,14 @@ node {
     stage('Manual Approval') {
         input message: 'Lanjutkan ke tahap Deploy?', ok:'Lanjutkan'
     }
-    stage('Deploy') {
-        docker.image('cdrx/pyinstaller-linux:python2').inside {
-            sh 'pyinstaller --onefile sources/add2vals.py'
-            archiveArtifacts 'dist/add2vals'
+        stage('Deploy') {
+        env.VOLUME = "${pwd()}/sources:/src"
+        env.IMAGE = 'cdrx/pyinstaller-linux:python2'
+        dir(env.BUILD_ID) {
+            unstash(name: 'compiled-results')
+            sh "docker run --rm -v ${env.VOLUME} ${env.IMAGE} 'pyinstaller -F add2vals.py'"
         }
+        archiveArtifacts "sources/dist/add2vals"
+        sh "docker run --rm -v ${env.VOLUME} ${env.IMAGE} 'rm -rf build dist'"
     }
 }
