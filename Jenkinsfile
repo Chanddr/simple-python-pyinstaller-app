@@ -14,17 +14,21 @@ node {
         input message: 'Lanjutkan ke tahap Deploy?', ok:'Lanjutkan'
     }
     stage('Deploy') {
-        docker.image('cdrx/pyinstaller-linux:python2') {
-            try {
-                sh 'pyinstaller --onefile sources/add2vals.py'
-            } catch (Exception e) {
-                echo 'Error: ' + e.toString()
-            } finally {
-                success {
-                    archiveArtifacts 'dist/add2vals'
-                    sleep 60
-                }
+        environment {
+            VOLUME = VOLUME
+            IMAGE = IMAGE
+        }
+        steps {
+            dir(path: env.BUILD_ID) {
+                unstash(name: 'compiled-results')
+                sh "docker run --rm -v ${VOLUME} ${IMAGE} 'pyinstaller -F add2vals.py'"
             }
-        }    
+        }
+        post {
+            success {
+                archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals"
+                sh "docker run --rm -v ${VOLUME} ${IMAGE} 'rm -rf build dist'"
+            }
+        }   
     }
 }
