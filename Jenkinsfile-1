@@ -30,7 +30,10 @@ pipeline {
                 }
             }
         }
-        stage('Deliver') { 
+        stage('Manual Approval') {
+        input message: 'Lanjutkan ke tahap Deploy?', ok:'Lanjutkan'
+        }
+        stage('Deploy') { 
             agent any
             environment { 
                 VOLUME = '$(pwd)/sources:/src'
