@@ -1,80 +1,52 @@
-node {
-    // Stage: Build
-    stage('Build') {
-        // Agent definition for the Build stage
-        agent {
-            docker {
-                image 'python:3.12.1-alpine3.19'
-            }
-        }
-
-        // Steps for the Build stage
-        steps {
-            // Compile Python files and stash results
-            sh 'python -m py_compile sources/add2vals.py sources/calc.py'
-            stash(name: 'compiled-results', includes: 'sources/*.py*')
-        }
+pipeline {
+    agent none
+    options {
+        skipStagesAfterUnstable()
     }
-
-    // Stage: Test
-    stage('Test') {
-        // Agent definition for the Test stage
-        agent {
-            docker {
-                image 'qnib/pytest'
+    stages {
+        stage('Build') {
+            agent {
+                docker {
+                    image 'python:3.12.1-alpine3.19'
+                }
+            }
+            steps {
+                sh 'python -m py_compile sources/add2vals.py sources/calc.py'
+                stash(name: 'compiled-results', includes: 'sources/*.py*')
             }
         }
-
-        // Steps for the Test stage
-        steps {
-            // Run pytest and generate JUnit XML report
-            sh 'py.test --junit-xml test-reports/results.xml sources/test_calc.py'
-        }
-
-        // Post actions for the Test stage
-        post {
-            always {
-                // Publish JUnit test results
-                junit 'test-reports/results.xml'
+        stage('Test') {
+            agent {
+                docker {
+                    image 'qnib/pytest'
+                }
+            }
+            steps {
+                sh 'py.test --junit-xml test-reports/results.xml sources/test_calc.py'
+            }
+            post {
+                always {
+                    junit 'test-reports/results.xml'
+                }
             }
         }
-    }
-
-    // Stage: Manual Approval
-    stage('Manual Approval') {
-        // Steps for the Manual Approval stage
-        steps {
-            // Input step for manual approval
-            input message: 'Lanjutkan ke tahap Deploy?', ok: 'Lanjutkan'
-        }
-    }
-
-    // Stage: Deploy
-    stage('Deploy') {
-        // Agent definition for the Deploy stage
-        agent any
-
-        // Environment variables for the Deploy stage
-        environment {
-            VOLUME = '$(pwd)/sources:/src'
-            IMAGE = 'cdrx/pyinstaller-linux:python2'
-        }
-
-        // Steps for the Deploy stage
-        steps {
-            // Change directory, unstash, and run Docker command
-            dir(path: env.BUILD_ID) {
-                unstash(name: 'compiled-results')
-                sh "docker run --rm -v ${VOLUME} ${IMAGE} 'pyinstaller -F add2vals.py'"
+        stage('Deploy') { 
+            agent any
+            environment { 
+                VOLUME = '$(pwd)/sources:/src'
+                IMAGE = 'cdrx/pyinstaller-linux:python2'
             }
-        }
-
-        // Post actions for the Deploy stage
-        post {
-            success {
-                // Archive artifacts and run additional Docker command on success
-                archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals"
-                sh "docker run --rm -v ${VOLUME} ${IMAGE} 'rm -rf build dist'"
+            steps {
+                dir(path: env.BUILD_ID) { 
+                    unstash(name: 'compiled-results') 
+                    sh "docker run --rm -v ${VOLUME} ${IMAGE} 'pyinstaller -F add2vals.py'" 
+                }
+            }
+            post {
+                success {
+                    archiveArtifacts "${env.BUILD_ID}/sources/dist/add2vals" 
+                    sh "docker run --rm -v ${VOLUME} ${IMAGE} 'rm -rf build dist'"
+                }
             }
         }
     }
