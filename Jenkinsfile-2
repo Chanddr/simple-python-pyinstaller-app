@@ -1,9 +1,4 @@
 node {
-    // Global options
-    options {
-        skipStagesAfterUnstable()
-    }
-
     // Stage: Build
     stage('Build') {
         // Agent definition for the Build stage
