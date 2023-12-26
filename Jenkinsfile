@@ -14,7 +14,6 @@ node {
         input message: 'Lanjutkan ke tahap Deploy?', ok:'Lanjutkan'
     }
     stage('Deploy'){
-        .inside("--entrypoint='")
         docker.image('cdrx/pyinstaller-linux:python2') {
             sh 'pyinstaller --onefile sources/add2vals.py'
             archiveArtifacts 'dist/add2vals'
