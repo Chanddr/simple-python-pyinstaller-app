@@ -10,4 +10,13 @@ node {
             sh 'py.test --verbose --junit-xml test-reports/results.xml sources/test_calc.py'
         }
     }
+    stage('Manual Approval') {
+        input message: 'Lanjutkan ke tahap Deploy?', ok:'Lanjutkan'
+    }
+    stage('Deploy'){
+        docker.image('cdrx/pyinstaller-linux:python2') {
+            sh 'pyinstaller --onefile sources/add2vals.py'
+            archiveArtifacts 'dist/add2vals'
+        }
+    }
 }
